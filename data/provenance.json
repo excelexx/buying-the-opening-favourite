@@ -13,9 +13,9 @@
   "source_policy": "favorite",
   "validation": "All 14 account/start-day replays matched prior figures; all 104 full-period scenario/date profits matched the independent frozen reference. Archived event bytes checked against every roster digest.",
   "result_sha256": {
-    "accounts.csv": "3f07309bce536c22bcab804cc3fb296674e4f409a29741c0401f54c33c3466f4",
-    "positions.csv": "12a39521b62ceb56c3e00ec29df22a538fecee60d7c99fcb8e4fa62ea318e3d5",
-    "start_days.csv": "a6e23de58d6342b07abc0c0bb002f731e7c96de14b767fb57cae66250dbba2b7",
-    "voting_dates.csv": "26827fff288dfe6ca339f0bab9e16cf348a207b069c9a96e5c6fca97e2bb00d9"
+    "accounts.csv": "b107f9b142b7d985a3ef06bbe2f097f2efc673713be3a96ae3f1104f016f87d5",
+    "positions.csv": "6b51f0ec292d5c64e4d368c456362718f24dd5fe7a95b560a7da07f8293dbd2b",
+    "start_days.csv": "f8c87bbe8bda7f3205be20122c22eca4398119c9149bfbf004a274e0c9fd52bf",
+    "voting_dates.csv": "8a94fa40bdbcf25d403191e17a48ab56a9bf8a3623da19789cd5db6aeda2bb2d"
   }
 }
