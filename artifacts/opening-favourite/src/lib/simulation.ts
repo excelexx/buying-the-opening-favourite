@@ -28,19 +28,25 @@ export type SimulationSnapshot = {
 };
 
 export const timelineMilestones = [
-  { time: 0, label: 'Nov 1', detail: 'First buying windows open' },
-  { time: 15, label: 'Nov 2', detail: 'Keep attempting at usable quotes' },
-  { time: 30, label: 'Nov 3', detail: 'Unfilled orders expire and retry' },
-  { time: 45, label: 'Nov 4', detail: 'First voting date; buying can continue to D+2' },
-  { time: 60, label: 'Nov 5', detail: 'Caps and cash constrain requests' },
-  { time: 78, label: 'Nov 6', detail: 'First markets reach D+2 and close buying' },
-  { time: 85, label: 'Nov 7', detail: 'Settlement begins' },
-  { time: 90, label: 'Nov 8', detail: 'Settled cash funds a later election' },
-  { time: 95, label: 'Nov 9', detail: 'Later buying window continues' },
-  { time: 98, label: 'Nov 10', detail: 'Orders keep attempting before the next vote' },
-  { time: 100, label: 'Nov 11', detail: 'Later election votes; holdings stay invested' },
-  { time: 106, label: 'Nov 12', detail: 'Later market closes its buying window' },
-  { time: 110, label: 'Nov 13', detail: 'Later holdings settle' },
+  { time: 0, label: 'Nov 1', detail: 'Alice: buying window opens' },
+  { time: 15, label: 'Nov 2', detail: 'Alice: orders keep trying' },
+  { time: 30, label: 'Nov 3', detail: 'Bob: buying window opens' },
+  { time: 45, label: 'Nov 4', detail: 'Alice: vote / close; hold until settlement' },
+  { time: 60, label: 'Nov 5', detail: 'Alice settles; Carol opens' },
+  { time: 75, label: 'Nov 6', detail: 'Bob: vote / close; hold until settlement' },
+  { time: 90, label: 'Nov 7', detail: 'Bob settles' },
+  { time: 105, label: 'Nov 8', detail: 'Carol: vote / close; hold until settlement' },
+  { time: 120, label: 'Nov 9', detail: 'Carol: waiting for settlement' },
+  { time: 135, label: 'Nov 10', detail: 'Carol settles; all markets complete' },
+];
+
+export const marketWindows = [
+  { name: 'Alice wins', side: 'YES' as const, ask: 0.64, wins: true,
+    opening: 0, close: 45, settlement: 60 },
+  { name: 'Bob wins', side: 'NO' as const, ask: 0.73, wins: false,
+    opening: 30, close: 75, settlement: 90 },
+  { name: 'Carol wins', side: 'YES' as const, ask: 0.68, wins: true,
+    opening: 60, close: 105, settlement: 135 },
 ];
 
 export function storyDate(time: number): string {
@@ -50,24 +56,12 @@ export function storyDate(time: number): string {
 export function simulate(scenario: Scenario): {
   duration: number; events: SimulationEvent[]; snapshots: SimulationSnapshot[];
 } {
-  const duration = 110;
+  const duration = 144;
   const delay = scenario === 'normal' ? 2 : 5;
   const participation = scenario === 'normal' ? 0.025 : 0.01;
   const extra = scenario === 'normal' ? 0.001 : 0.011;
   const money = (n: number) => Math.round(n * 1e8) / 1e8;
-  const markets = [
-    { name: 'Alice wins', side: 'YES' as const, ask: 0.64, wins: true },
-    { name: 'Bob wins', side: 'NO' as const, ask: 0.73, wins: false },
-    ...Array.from({ length: 12 }, (_, i) => ({
-      name: ['Senate · East', 'Governor · West', 'House · North', 'Mayor · Central',
-        'Ballot measure', 'Primary · South', 'Senate · West', 'House · East',
-        'Governor · North', 'Runoff · South', 'Mayor · East', 'House · West'][i]!,
-      side: (i % 3 === 0 ? 'NO' : 'YES') as 'YES' | 'NO',
-      ask: 0.77 + (i % 4) * 0.035,
-      wins: i % 5 !== 0,
-    })),
-    { name: 'Later election', side: 'YES' as const, ask: 0.68, wins: true },
-  ];
+  const markets = marketWindows;
   let cash = 1000;
   const orders: SimulationOrder[] = [];
   const holdings = markets.map(m => ({
@@ -84,14 +78,14 @@ export function simulate(scenario: Scenario): {
     // Requests are sized from beginning-of-timestamp cash. Trades and settlement
     // later in this timestamp cannot fund them.
     const requests = markets.flatMap((m, i) => {
-      const opening = i === markets.length - 1 ? 90 : 0;
-      const close = i === markets.length - 1 ? 106 : 78;
+      const { opening, close } = m;
       const h = holdings[i]!;
       if (time < opening || time >= close || h.settled) return [];
       if (time === opening) {
         emit({ time, type: 'quote', market: m.name, orderId: '', quantity: 0,
           price: m.ask, message: `${m.name}: opening midpoint selects ${m.side}; side remains fixed.` });
       }
+      if (time === 0) return [];
       if (orders.some(o => o.market === m.name && o.status === 'live') || h.shares >= 100) return [];
       return [{ m, q: Math.min(10, 100 - h.shares) }];
     });
@@ -110,12 +104,9 @@ export function simulate(scenario: Scenario): {
       emit({ time, type: 'submit', market: m.name, orderId: order.id, quantity,
         price: m.ask, message: `${order.id}: request ${quantity} ${m.side} at ${(m.ask * 100).toFixed(1)}¢; cash reserved${fraction < 1 ? ' after proportional allocation' : ''}.` });
     }
-    if (time === 0) emit({ time, type: 'skip', market: 'Tied opening market',
-      orderId: '', quantity: 0, price: 0.5, message: 'Opening midpoint is exactly 50%: permanently skip this contract.' });
-
     for (const order of orders.filter(o => o.status === 'live')) {
       const marketIndex = markets.findIndex(m => m.name === order.market);
-      const close = marketIndex === markets.length - 1 ? 106 : 78;
+      const close = markets[marketIndex]!.close;
       const age = time - order.submittedAt;
       if (age >= 30 || time >= close) {
         order.status = 'expired';
@@ -126,9 +117,13 @@ export function simulate(scenario: Scenario): {
           message: `${order.id}: tried ${order.quantity} shares at ${(order.limit * 100).toFixed(1)}¢. ${order.quantity === order.remaining ? 'No eligible trade filled the order, so no shares were bought.' : `${order.quantity - order.remaining} shares bought; ${order.remaining} unfilled shares cancelled.`} ${time >= close ? 'Buying window closed.' : '30-second limit reached.'} Unused reserved cash released.` });
         continue;
       }
-      // Bob has no eligible tape activity until t=35, intentionally demonstrating
+      // Bob has no eligible tape activity until t=65, intentionally demonstrating
       // expiry. All synthetic quotes refresh each second, so quote age is zero.
-      if (marketIndex === 1 && time < 35) continue;
+      if (marketIndex === 1 && time < 65) continue;
+      // The fictional tape dries up after these holdings; the strategy keeps
+      // attempting orders until closure, but cannot buy without eligible trades.
+      const tapeLiquidity = [30, 20, 40][marketIndex]!;
+      if (holdings[marketIndex]!.shares >= tapeLiquidity) continue;
       const eligibleTrade = time === 2 || time === 8 || time === 12 || (time > 12 && time % 3 === 0);
       if (!eligibleTrade || age < delay) continue;
       const volume = time === 2 ? 160 : time === 8 ? 240 : 400;
@@ -150,7 +145,7 @@ export function simulate(scenario: Scenario): {
     }
     // Deliberately later in this step: payout can fund only a future quote.
     markets.forEach((m, i) => {
-      const settlement = i === markets.length - 1 ? 110 : 85 + (i % 3) * 2;
+      const settlement = m.settlement;
       const h = holdings[i]!;
       if (time !== settlement || h.settled) return;
       const payout = m.wins ? h.shares : 0;

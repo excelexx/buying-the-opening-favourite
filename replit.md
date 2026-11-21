@@ -43,6 +43,8 @@ An animated, presenter-controlled explanation of the opening-favourite election-
 
 - Use the uploaded 3D presentation as a visual reference.
 - Make the timeline more complex, with more dates and explicit explanations of attempts, fills and unfilled orders, including a “trying” animation.
+- Keep the original presentation's slides, order and text unchanged. Add explanations only in the timeline.
+- Show exactly three timeline markets with different starts and endings, and play from the initial state through every final settlement.
 
 ## Gotchas
 

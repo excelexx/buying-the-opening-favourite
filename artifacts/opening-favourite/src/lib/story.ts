@@ -46,3 +46,13 @@ export function marketSummary(snap: SimulationSnapshot, market: string) {
   const holding = snap.holdings.find((h) => h.market === market);
   return { orders, attempted, filled, holding, why: parts.join(', ') };
 }
+
+import { marketWindows } from '@/lib/simulation';
+export type MarketState = 'not started' | 'buying' | 'holding' | 'settled';
+export function marketState(name: string, t: number): MarketState {
+  const w = marketWindows.find((m) => m.name === name);
+  if (!w || t < w.opening) return 'not started';
+  if (t < w.close) return 'buying';
+  if (t < w.settlement) return 'holding';
+  return 'settled';
+}
