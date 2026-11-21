@@ -41,11 +41,11 @@ export const timelineMilestones = [
 ];
 
 export const marketWindows = [
-  { name: 'Alice wins', side: 'YES' as const, ask: 0.64, wins: true,
+  { name: 'Alice wins', side: 'YES' as const, bid: 0.62, ask: 0.64, wins: true,
     opening: 0, close: 45, settlement: 60 },
-  { name: 'Bob wins', side: 'NO' as const, ask: 0.73, wins: false,
+  { name: 'Bob wins', side: 'NO' as const, bid: 0.71, ask: 0.73, wins: false,
     opening: 30, close: 75, settlement: 90 },
-  { name: 'Carol wins', side: 'YES' as const, ask: 0.68, wins: true,
+  { name: 'Carol wins', side: 'YES' as const, bid: 0.66, ask: 0.68, wins: true,
     opening: 60, close: 105, settlement: 135 },
 ];
 

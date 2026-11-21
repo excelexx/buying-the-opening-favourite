@@ -1,1 +1,2 @@
 - [Presentation integrity](presentation-integrity.md) — distinguish saved strategy results from the fictional, date-compressed teaching replay.
+- [Spatial label fitting](spatial-label-fitting.md) — reserve pixel margins for 3D labels; fitting the meshes alone clips text on narrow screens.

@@ -1,9 +1,9 @@
 import { useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { chapters, startChart, SPACING } from '@/deck';
 import { marketWindows, timelineMilestones, storyDate, type SimulationEvent, type SimulationSnapshot } from '@/lib/simulation';
-import { Html } from '@react-three/drei';
+import { Html, OrthographicCamera } from '@react-three/drei';
 import { marketAction } from '@/lib/timeline-actions';
 
 const C = {
@@ -11,6 +11,14 @@ const C = {
 };
 
 export const stationX = (i: number) => i * SPACING;
+const INITIAL_CAMERA = { position: [-4, 3, 11] as [number, number, number], fov: 42 };
+
+function PortraitCamera({ enabled }: { enabled: boolean }) {
+  const width = useThree(s => s.size.width);
+  return enabled && width < 640
+    ? <OrthographicCamera makeDefault position={[0, 30, 50]} zoom={Math.max(6, (width - 170) / 20)} near={0.1} far={250} />
+    : null;
+}
 
 function Rig({ index, replay }: { index: number; replay: boolean }) {
   const target = useRef(new THREE.Vector3());
@@ -18,15 +26,21 @@ function Rig({ index, replay }: { index: number; replay: boolean }) {
   useFrame(({ camera, pointer, clock, size }, dt) => {
     const x = stationX(index);
     const sway = Math.sin(clock.elapsedTime * 0.25) * 0.4;
+    const compact = size.width < 640;
     if (replay) {
-      const distance = Math.max(20, 21 / Math.max(0.5, size.width / size.height));
-      target.current.set(x + pointer.x * 0.15, distance * 0.65, distance);
+      const distance = Math.max(13, (compact ? 24 : 18) / Math.max(0.35, size.width / size.height));
+      target.current.set(x + (compact ? -3 : 0) + pointer.x * 0.08, distance * 0.82, distance);
     }
-    else target.current.set(x - 3.2 + pointer.x * 1.2 + sway, 3.2 + pointer.y * 0.6, 11);
+    else target.current.set(x + 1.5 + pointer.x * 0.3 + sway * 0.2, 5 + pointer.y * 0.3, 16);
     const k = 1 - Math.pow(0.04, dt);
     camera.position.lerp(target.current, k);
-    look.current.lerp(new THREE.Vector3(x + (replay ? 0 : 1.5), replay ? 0 : 1.6, 0), k);
+    look.current.lerp(new THREE.Vector3(x + (replay ? compact ? -3 : 0 : 1.5), replay ? 0 : 1.6, 0), k);
     camera.lookAt(look.current);
+    if ('isOrthographicCamera' in camera && camera.isOrthographicCamera) {
+      const ortho = camera as THREE.OrthographicCamera;
+      ortho.zoom = Math.max(6, (size.width - 170) / 20);
+      ortho.updateProjectionMatrix();
+    }
   });
   return null;
 }
@@ -172,13 +186,22 @@ function Exhibit({ id }: { id: string }) {
 
 function TryMarker({ y = 0.25 }: { y?: number }) {
   const g = useRef<THREE.Group>(null); const ring = useRef<THREE.Mesh>(null);
+  const bulge = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (g.current) g.current.rotation.y = t * 3;
+    if (bulge.current) {
+      const pulse = (Math.sin(t * 5) + 1) / 2;
+      bulge.current.scale.set(0.32 + pulse * 0.13, 0.1 + pulse * 0.35, 0.4 + pulse * 0.12);
+    }
     if (ring.current) { const p = (t * 0.9) % 1; ring.current.scale.setScalar(0.6 + p * 1.2); (ring.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - p); }
   });
   return (
     <group position={[0, y, 0]}>
+      <mesh ref={bulge} position={[0, -0.12, 0]}>
+        <sphereGeometry args={[1, 24, 16]} />
+        <meshStandardMaterial color={C.brass} transparent opacity={0.8} roughness={0.35} />
+      </mesh>
       <group ref={g}>
         <mesh position={[0.55, 0.1, 0]}><sphereGeometry args={[0.07, 12, 12]} /><meshBasicMaterial color={C.yes} /></mesh>
         <mesh position={[-0.55, -0.1, 0]}><sphereGeometry args={[0.05, 12, 12]} /><meshBasicMaterial color={C.brass} /></mesh>
@@ -189,22 +212,24 @@ function TryMarker({ y = 0.25 }: { y?: number }) {
 }
 
 const TX = (t: number, d: number) => -8 + (t / d) * 16;
-const LANE = (i: number) => (i - 1) * 2.6;
 function Replay({ snap, selected, time, events, duration }: { snap: SimulationSnapshot | null; selected: string; time: number; events: SimulationEvent[]; duration: number }) {
+  const compact = useThree(s => s.size.width < 640);
+  const laneGap = compact ? 7 : 3.4;
+  const depth = laneGap * 2 + 2.2;
   const X = (t: number) => TX(t, duration);
   const fills = events.filter((e) => e.type === 'fill' && e.time <= time);
   const label = (txt: string, color = C.ink, w = 600, size = 9) => <div style={{ font: `${w} ${size}px JetBrains Mono, monospace`, letterSpacing: '.12em', color, whiteSpace: 'nowrap' }}>{txt}</div>;
   return (
     <group>
-      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[19, 10]} /><meshStandardMaterial color={C.haze} /></mesh>
-      {timelineMilestones.map((m) => (
+      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[20, depth + 3]} /><meshStandardMaterial color={C.haze} /></mesh>
+      {timelineMilestones.filter((_, i) => !compact || i % 2 === 0 || i === timelineMilestones.length - 1).map((m) => (
         <group key={m.label} position={[X(m.time), 0, 0]}>
-          <mesh position={[0, 0.005, 0]}><boxGeometry args={[0.02, 0.01, 7]} /><meshBasicMaterial color={C.ink} transparent opacity={0.25} /></mesh>
-          <Html position={[0, 0, 4]} center>{label(m.label.toUpperCase(), C.ink, 600, 9)}</Html>
+          <mesh position={[0, 0.005, 0]}><boxGeometry args={[0.02, 0.01, depth]} /><meshBasicMaterial color={C.ink} transparent opacity={0.25} /></mesh>
+          <Html position={[Math.max(-7.2, Math.min(7.2, X(m.time))) - X(m.time), 0, depth / 2 + 0.1]} center>{label(m.label.toUpperCase(), C.ink, 600, compact ? 8 : 9)}</Html>
         </group>
       ))}
       {marketWindows.map((w, i) => {
-        const col = w.side === 'YES' ? C.yes : C.no; const z = LANE(i); const sel = w.name === selected;
+        const col = w.side === 'YES' ? C.yes : C.no; const z = (i - 1) * laneGap; const sel = w.name === selected;
         const bx = X(w.opening), ex = X(w.close), sx = X(w.settlement);
         const doneB = Math.max(0, Math.min(time, w.close) - w.opening), doneH = Math.max(0, Math.min(time, w.settlement) - w.close);
         const h = snap?.holdings.find((k) => k.market === w.name);
@@ -213,7 +238,7 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
         let cum = 0;
         return (
           <group key={w.name} position={[0, 0, z]}>
-            <Html position={[Math.max(-6.6, Math.min(6.6, X(Math.min(time, w.settlement)))), 1.85, 0]} center zIndexRange={[12, 11]}>
+            <Html position={[Math.max(-6.2, Math.min(compact ? 2 : 6.2, X(Math.min(time, w.settlement)))), 1.8, 0]} center zIndexRange={[12, 11]}>
               <div role="status" data-testid={`popup-${w.name.split(' ')[0].toLowerCase()}`} style={{ opacity: action ? 1 : 0, transition: 'opacity 180ms', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', border: `1px solid ${col}55`, borderRadius: 4, background: '#fbf6ed', color: C.ink, boxShadow: '0 4px 15px #1c243812', font: '500 12px Bricolage Grotesque, sans-serif' }}>
                   {action?.trying && <span className="timeline-trying-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: col }} />}
@@ -227,12 +252,15 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
             <mesh position={[(ex + sx) / 2, 0.03, 0]}><boxGeometry args={[sx - ex, 0.03, 0.18]} /><meshStandardMaterial color={C.ink} transparent opacity={0.25} /></mesh>
             {doneH > 0 && <mesh position={[ex + (X(doneH) + 8) / 2, 0.05, 0]}><boxGeometry args={[X(doneH) + 8, 0.05, 0.2]} /><meshStandardMaterial color={C.ink} /></mesh>}
             <mesh position={[ex, 0.6, 0]}><boxGeometry args={[0.05, 1.2, 0.9]} /><meshStandardMaterial color={C.ink} /></mesh>
-            <Html position={[ex, 1.35, 0]} center>{label('VOTE / CLOSE', C.ink, 600, 8)}</Html>
+            <Html position={[ex, 0, compact ? 0.4 : 0.8]} center>{label(compact ? 'CLOSE' : 'VOTE / CLOSE', C.ink, 600, compact ? 7 : 8)}</Html>
             <group position={[sx, 0, 0]}>
               <mesh position={[0, settled ? 0.35 : 0.06, 0]} rotation={[0, 0, 0]}><cylinderGeometry args={[0.32, 0.32, settled ? 0.1 : 0.04, 32]} /><meshStandardMaterial color={C.brass} metalness={settled ? 0.7 : 0} roughness={0.3} transparent opacity={settled ? 1 : 0.4} /></mesh>
-              <Html position={[0, 0.9, 0]} center>{label(settled ? `SETTLED $${w.wins ? (h?.shares ?? 0) : 0}` : 'SETTLES', settled ? C.brass : C.ink, 700, 8)}</Html>
+              <Html position={[0, 0, compact ? 2 : 0.8]} center>{label(settled ? `SETTLED $${w.wins ? (h?.shares ?? 0) : 0}` : 'SETTLES', settled ? C.brass : C.ink, 700, compact ? 7 : 8)}</Html>
             </group>
-            <Html position={[bx - 0.2, 0.15, 0]} center><div style={{ transform: 'translateX(-55%)', font: `${sel ? 700 : 600} 11px Bricolage Grotesque, sans-serif`, color: col, whiteSpace: 'nowrap' }}>{w.side} on {w.name.replace(' wins', '')}</div></Html>
+            <Html position={[-8.1, 0.15, 0]} center><div style={{ transform: 'translateX(-55%)', font: `${sel ? 700 : 600} 12px Bricolage Grotesque, sans-serif`, color: col, whiteSpace: 'nowrap', textAlign: 'right', padding: '5px 8px', background: '#efe6d6ed', borderRadius: 3 }}>
+              {w.side} on {w.name.replace(' wins', '')}
+              <div style={{ font: '400 10px JetBrains Mono, monospace', marginTop: 4, color: C.ink }} data-testid={`opening-bid-${w.name.split(' ')[0].toLowerCase()}`}>Opening bid ${w.bid.toFixed(2)}</div>
+            </div></Html>
             {fills.filter((e) => e.market === w.name).map((e, k) => {
               cum += e.quantity; const ht = Math.max(0.04, (cum / 100) * 2.4);
               return <mesh key={k} position={[X(e.time), ht / 2 + 0.1, 0]}><boxGeometry args={[0.09, ht, 0.4]} /><meshStandardMaterial color={col} /></mesh>;
@@ -247,9 +275,9 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
         );
       })}
       <group position={[X(time), 0, 0]}>
-        <mesh position={[0, 1.2, 0]}><boxGeometry args={[0.04, 2.4, 7]} /><meshBasicMaterial color={C.yes} transparent opacity={0.12} /></mesh>
-        <mesh position={[0, 1.2, 3.5]}><boxGeometry args={[0.05, 2.4, 0.05]} /><meshBasicMaterial color={C.yes} /></mesh>
-        <Html position={[0, 2.7, 3.5]} center>{label(storyDate(time).toUpperCase(), C.yes, 700, 11)}</Html>
+        <mesh position={[0, 1.2, 0]}><boxGeometry args={[0.04, 2.4, depth]} /><meshBasicMaterial color={C.yes} transparent opacity={0.12} /></mesh>
+        <mesh position={[0, 1.2, depth / 2]}><boxGeometry args={[0.05, 2.4, 0.05]} /><meshBasicMaterial color={C.yes} /></mesh>
+        <Html position={[0, 2.7, depth / 2]} center>{label(storyDate(time).toUpperCase(), C.yes, 700, 11)}</Html>
       </group>
     </group>
   );
@@ -259,13 +287,14 @@ export default function Scene({ index, snap, selected, time, events, duration }:
   const replay = chapters[index]?.id === 'replay';
   const replayIdx = chapters.findIndex((c) => c.id === 'replay');
   return (
-    <div className="absolute inset-0">
-    <Canvas camera={{ position: [-4, 3, 11], fov: 42 }} dpr={[1, 1.8]} shadows={false}>
+    <div className={replay ? 'absolute inset-0' : `presentation-exhibit ${chapters[index]?.align === 'right' ? 'exhibit-left' : 'exhibit-right'}`}>
+    <Canvas camera={INITIAL_CAMERA} dpr={[1, 1.8]} shadows={false}>
       <color attach="background" args={[C.paper]} />
-      <fog attach="fog" args={[C.paper, replay ? 35 : 12, replay ? 65 : 34]} />
+      <fog attach="fog" args={[C.paper, replay ? 80 : 12, replay ? 160 : 34]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[6, 10, 6]} intensity={1.4} color="#fff3df" />
       <directionalLight position={[-8, 4, -4]} intensity={0.4} color="#9fc7cc" />
+      <PortraitCamera enabled={replay} />
       <Rig index={index} replay={replay} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[chapters.length * SPACING / 2, -0.05, 0]}>
         <planeGeometry args={[chapters.length * SPACING + 60, 60]} />
