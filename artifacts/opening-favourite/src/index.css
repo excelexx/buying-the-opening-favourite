@@ -49,11 +49,18 @@ input[type=range].scrub { -webkit-appearance:none; appearance:none; height:4px; 
 input[type=range].scrub::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:22px; background:hsl(var(--primary)); border:2px solid hsl(var(--card)); cursor:grab; }
 input[type=range].scrub::-moz-range-thumb { width:14px; height:22px; background:hsl(var(--primary)); border:2px solid hsl(var(--card)); border-radius:0; }
 
-@keyframes timeline-trying {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #c08a2b30; }
-  50% { opacity: .45; box-shadow: 0 0 0 5px #c08a2b00; }
+@keyframes timeline-popup-attempt {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 #d8402a00; }
+  45% { transform: scale(1.035, 1.065); box-shadow: 0 0 0 3px #d8402a20; }
 }
-.timeline-trying-dot { animation: timeline-trying 1.2s ease-in-out infinite; }
+@keyframes timeline-popup-rejected {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.055, 1.08); box-shadow: 0 0 0 4px #d8402a28; }
+  50% { transform: translateX(-3px) scale(1.02); }
+  70% { transform: translateX(3px); }
+}
+.timeline-popup-attempt { animation: timeline-popup-attempt 1.4s ease-in-out infinite; }
+.timeline-popup-rejected { animation: timeline-popup-rejected .55s ease-out both; }
 .presentation-copy {
   position: absolute; top: 64px; bottom: 96px; z-index: 15;
   display: flex; flex-direction: column; justify-content: center;
@@ -74,5 +81,5 @@ input[type=range].scrub::-moz-range-thumb { width:14px; height:22px; background:
   .presentation-exhibit { top: 52%; bottom: 88px; width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .timeline-trying-dot { animation: none; }
+  .timeline-popup-attempt, .timeline-popup-rejected { animation: none; }
 }

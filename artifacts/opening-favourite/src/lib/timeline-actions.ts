@@ -1,7 +1,7 @@
 import { marketWindows, type SimulationSnapshot } from './simulation';
 
 /** Short, lane-local explanations derived from the actual replay state. */
-export function marketAction(snapshot: SimulationSnapshot | null, time: number, name: string) {
+export function marketAction(snapshot: SimulationSnapshot | null, time: number, name: string): { text: string; trying: boolean; rejected?: boolean; animationKey?: string } | null {
   const market = marketWindows.find(m => m.name === name);
   if (!market || !snapshot || time < market.opening) return null;
   const holding = snapshot.holdings.find(h => h.market === name);
@@ -16,10 +16,10 @@ export function marketAction(snapshot: SimulationSnapshot | null, time: number, 
   if (recent?.type === 'expire') {
     const order = snapshot.orders.find(o => o.id === recent.orderId);
     const filled = order ? order.quantity - order.remaining : 0;
-    return { text: filled ? `${filled} filled · ${recent.quantity} expired` : 'Unfilled · no shares bought', trying: false };
+    return { text: filled ? `${filled} filled · ${recent.quantity} expired` : 'Unfilled · no shares bought', trying: false, rejected: true, animationKey: `expired-${recent.orderId}-${recent.time}` };
   }
   if (time >= market.close) return { text: `${held} held · awaiting settlement`, trying: false };
   const live = snapshot.orders.find(o => o.market === name && o.status === 'live');
-  if (live) return { text: `Attempts to fill at $${live.limit.toFixed(2)}`, trying: true };
+  if (live) return { text: `Attempts to fill at $${live.limit.toFixed(2)}`, trying: true, animationKey: live.id };
   return held ? { text: `${held} shares held`, trying: false } : null;
 }

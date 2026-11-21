@@ -184,33 +184,6 @@ function Exhibit({ id }: { id: string }) {
   }
 }
 
-function TryMarker({ y = 0.25 }: { y?: number }) {
-  const g = useRef<THREE.Group>(null); const ring = useRef<THREE.Mesh>(null);
-  const bulge = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (g.current) g.current.rotation.y = t * 3;
-    if (bulge.current) {
-      const pulse = (Math.sin(t * 5) + 1) / 2;
-      bulge.current.scale.set(0.32 + pulse * 0.13, 0.1 + pulse * 0.35, 0.4 + pulse * 0.12);
-    }
-    if (ring.current) { const p = (t * 0.9) % 1; ring.current.scale.setScalar(0.6 + p * 1.2); (ring.current.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - p); }
-  });
-  return (
-    <group position={[0, y, 0]}>
-      <mesh ref={bulge} position={[0, -0.12, 0]}>
-        <sphereGeometry args={[1, 24, 16]} />
-        <meshStandardMaterial color={C.brass} transparent opacity={0.8} roughness={0.35} />
-      </mesh>
-      <group ref={g}>
-        <mesh position={[0.55, 0.1, 0]}><sphereGeometry args={[0.07, 12, 12]} /><meshBasicMaterial color={C.yes} /></mesh>
-        <mesh position={[-0.55, -0.1, 0]}><sphereGeometry args={[0.05, 12, 12]} /><meshBasicMaterial color={C.brass} /></mesh>
-      </group>
-      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.24, 0]}><ringGeometry args={[0.4, 0.46, 40]} /><meshBasicMaterial color={C.brass} transparent /></mesh>
-    </group>
-  );
-}
-
 const TX = (t: number, d: number) => -8 + (t / d) * 16;
 function Replay({ snap, selected, time, events, duration }: { snap: SimulationSnapshot | null; selected: string; time: number; events: SimulationEvent[]; duration: number }) {
   const compact = useThree(s => s.size.width < 640);
@@ -240,8 +213,7 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
           <group key={w.name} position={[0, 0, z]}>
             <Html position={[Math.max(-6.2, Math.min(compact ? 2 : 6.2, X(Math.min(time, w.settlement)))), 1.8, 0]} center zIndexRange={[12, 11]}>
               <div role="status" data-testid={`popup-${w.name.split(' ')[0].toLowerCase()}`} style={{ opacity: action ? 1 : 0, transition: 'opacity 180ms', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', border: `1px solid ${col}55`, borderRadius: 4, background: '#fbf6ed', color: C.ink, boxShadow: '0 4px 15px #1c243812', font: '500 12px Bricolage Grotesque, sans-serif' }}>
-                  {action?.trying && <span className="timeline-trying-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: col }} />}
+                <div key={action?.animationKey ?? 'rest'} className={action?.rejected ? 'timeline-popup-rejected' : action?.trying ? 'timeline-popup-attempt' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', border: `1px solid ${action?.trying || action?.rejected ? '#d8402a' : `${col}55`}`, borderRadius: 4, background: '#fbf6ed', color: C.ink, boxShadow: '0 4px 15px #1c243812', font: '500 12px Bricolage Grotesque, sans-serif' }}>
                   {action?.text}
                 </div>
                 <div style={{ width: 1, height: 18, background: `${col}88`, margin: '0 auto' }} />
@@ -267,9 +239,6 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
             })}
             {(snap?.orders ?? []).filter((o) => o.market === w.name && o.status === 'expired' && o.quantity === o.remaining).map((o) => (
               <mesh key={o.id} position={[X(o.endedAt ?? o.submittedAt + 30), 0.2, 0]}><boxGeometry args={[0.18, 0.18, 0.18]} /><meshStandardMaterial color={C.ink} wireframe transparent opacity={0.4} /></mesh>
-            ))}
-            {(snap?.orders ?? []).filter((o) => o.market === w.name && o.status === 'live').map((o) => (
-              <group key={o.id} position={[X(time), 0, 0]}><TryMarker y={0.3} /></group>
             ))}
           </group>
         );
