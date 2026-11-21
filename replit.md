@@ -47,6 +47,7 @@ An animated, presenter-controlled explanation of the opening-favourite election-
 - Show exactly three timeline markets with different starts and endings, and play from the initial state through every final settlement.
 - Keep slide text separate from the 3D graphics so they never overlap. Keep the timeline large, with opening bids, animated order attempts, short popups and just one small slider.
 - Animate the popup text box itself with a quick standard rejection “bzzzt”: a sharp side-to-side shake and red flash/outline, not an expanding bulge. Do not use a sphere or a separate 3D attempt effect.
+- Show a separate short reason above an order popup only while it buzzes. Spread illustrative trades across the buying windows rather than clustering them at the start.
 
 ## Gotchas
 

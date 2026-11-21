@@ -5,6 +5,7 @@ import { chapters, startChart, SPACING } from '@/deck';
 import { marketWindows, timelineMilestones, storyDate, type SimulationEvent, type SimulationSnapshot } from '@/lib/simulation';
 import { Html, OrthographicCamera } from '@react-three/drei';
 import { marketAction } from '@/lib/timeline-actions';
+import { OrderPopup } from './OrderPopup';
 
 const C = {
   paper: '#efe6d6', ink: '#1c2438', yes: '#d8402a', no: '#1d6f78', brass: '#c08a2b', haze: '#d9cdb8',
@@ -213,9 +214,7 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
           <group key={w.name} position={[0, 0, z]}>
             <Html position={[Math.max(-6.2, Math.min(compact ? 2 : 6.2, X(Math.min(time, w.settlement)))), 1.8, 0]} center zIndexRange={[12, 11]}>
               <div role="status" data-testid={`popup-${w.name.split(' ')[0].toLowerCase()}`} style={{ opacity: action ? 1 : 0, transition: 'opacity 180ms', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-                <div key={action?.animationKey ?? 'rest'} className={action?.rejected ? 'timeline-popup-rejected' : action?.trying ? 'timeline-popup-attempt' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', border: `1px solid ${action?.trying || action?.rejected ? '#d8402a' : `${col}55`}`, borderRadius: 4, background: '#fbf6ed', color: C.ink, boxShadow: '0 4px 15px #1c243812', font: '500 12px Bricolage Grotesque, sans-serif' }}>
-                  {action?.text}
-                </div>
+                <OrderPopup action={action} color={col} />
                 <div style={{ width: 1, height: 18, background: `${col}88`, margin: '0 auto' }} />
               </div>
             </Html>

@@ -33,10 +33,10 @@ export const timelineMilestones = [
   { time: 30, label: 'Nov 3', detail: 'Bob: buying window opens' },
   { time: 45, label: 'Nov 4', detail: 'Alice: vote / close; hold until settlement' },
   { time: 60, label: 'Nov 5', detail: 'Alice settles; Carol opens' },
-  { time: 75, label: 'Nov 6', detail: 'Bob: vote / close; hold until settlement' },
-  { time: 90, label: 'Nov 7', detail: 'Bob settles' },
-  { time: 105, label: 'Nov 8', detail: 'Carol: vote / close; hold until settlement' },
-  { time: 120, label: 'Nov 9', detail: 'Carol: waiting for settlement' },
+  { time: 75, label: 'Nov 6', detail: 'Bob and Carol: orders keep trying' },
+  { time: 90, label: 'Nov 7', detail: 'Bob: vote / close; hold until settlement' },
+  { time: 105, label: 'Nov 8', detail: 'Bob settles; Carol keeps buying' },
+  { time: 126, label: 'Nov 9', detail: 'Carol: vote / close; hold until settlement' },
   { time: 135, label: 'Nov 10', detail: 'Carol settles; all markets complete' },
 ];
 
@@ -44,10 +44,18 @@ export const marketWindows = [
   { name: 'Alice wins', side: 'YES' as const, bid: 0.62, ask: 0.64, wins: true,
     opening: 0, close: 45, settlement: 60 },
   { name: 'Bob wins', side: 'NO' as const, bid: 0.71, ask: 0.73, wins: false,
-    opening: 30, close: 75, settlement: 90 },
+    opening: 30, close: 90, settlement: 105 },
   { name: 'Carol wins', side: 'YES' as const, bid: 0.66, ask: 0.68, wins: true,
-    opening: 60, close: 105, settlement: 135 },
+    opening: 60, close: 126, settlement: 135 },
 ];
+
+// Fictional eligible trades are distributed across each buying window rather
+// than clustered into its opening seconds. Bob still demonstrates a timeout.
+const teachingTapes = [
+  [[5, 160], [10, 240], [22, 400], [39, 400]],
+  [[35, 240], [48, 160], [57, 400]],
+  [[7, 400], [25, 400], [44, 400], [63, 400]],
+] as const;
 
 export function storyDate(time: number): string {
   return [...timelineMilestones].reverse().find(point => time >= point.time)?.label ?? 'Nov 1';
@@ -117,17 +125,14 @@ export function simulate(scenario: Scenario): {
           message: `${order.id}: tried ${order.quantity} shares at ${(order.limit * 100).toFixed(1)}¢. ${order.quantity === order.remaining ? 'No eligible trade filled the order, so no shares were bought.' : `${order.quantity - order.remaining} shares bought; ${order.remaining} unfilled shares cancelled.`} ${time >= close ? 'Buying window closed.' : '30-second limit reached.'} Unused reserved cash released.` });
         continue;
       }
-      // Bob has no eligible tape activity until t=65, intentionally demonstrating
-      // expiry. All synthetic quotes refresh each second, so quote age is zero.
-      if (marketIndex === 1 && time < 65) continue;
       // The fictional tape dries up after these holdings; the strategy keeps
       // attempting orders until closure, but cannot buy without eligible trades.
       const tapeLiquidity = [30, 20, 40][marketIndex]!;
       if (holdings[marketIndex]!.shares >= tapeLiquidity) continue;
-      const eligibleTrade = time === 2 || time === 8 || time === 12 || (time > 12 && time % 3 === 0);
-      if (!eligibleTrade || age < delay) continue;
-      const volume = time === 2 ? 160 : time === 8 ? 240 : 400;
-      const quantity = Math.min(order.remaining, Math.floor(volume * participation + 1e-9));
+      const trade = teachingTapes[marketIndex]?.find(([offset]) => time === markets[marketIndex]!.opening + offset);
+      if (!trade || age < delay) continue;
+      const volume = trade[1];
+      const quantity = Math.min(order.remaining, tapeLiquidity - holdings[marketIndex]!.shares, Math.floor(volume * participation + 1e-9));
       if (!quantity) continue;
       const fee = Math.ceil(0.07 * quantity * order.limit * (1 - order.limit) * 100 - 1e-9) / 100;
       const cost = money(quantity * (order.limit + extra) + fee);
