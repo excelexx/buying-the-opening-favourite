@@ -48,3 +48,12 @@ body::after {
 input[type=range].scrub { -webkit-appearance:none; appearance:none; height:4px; background:hsl(var(--ink)/.2); width:100%; }
 input[type=range].scrub::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:22px; background:hsl(var(--primary)); border:2px solid hsl(var(--card)); cursor:grab; }
 input[type=range].scrub::-moz-range-thumb { width:14px; height:22px; background:hsl(var(--primary)); border:2px solid hsl(var(--card)); border-radius:0; }
+
+@keyframes timeline-trying {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #c08a2b30; }
+  50% { opacity: .45; box-shadow: 0 0 0 5px #c08a2b00; }
+}
+.timeline-trying-dot { animation: timeline-trying 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .timeline-trying-dot { animation: none; }
+}

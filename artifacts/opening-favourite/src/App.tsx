@@ -157,7 +157,7 @@ function App() {
         {webgl ? <Suspense fallback={<div className="h-full w-full bg-background" />}><Scene index={index} snap={replay.snap} selected={replay.market} time={replay.time} events={replay.run.events} duration={replay.run.duration} /></Suspense>
           : <div className="h-full w-full" style={{ background: 'radial-gradient(circle at 70% 40%, hsl(var(--yes)/.25), transparent 50%), radial-gradient(circle at 30% 70%, hsl(var(--no)/.25), transparent 50%), hsl(var(--background))' }} data-testid="fallback-webgl" />}
       </div>
-      <div className="pointer-events-none absolute inset-0" style={{ background: right ? 'linear-gradient(270deg, hsl(var(--background)/.92) 0%, hsl(var(--background)/.6) 38%, transparent 62%)' : 'linear-gradient(90deg, hsl(var(--background)/.92) 0%, hsl(var(--background)/.6) 38%, transparent 62%)' }} />
+      {ch.id !== 'replay' && <div className="pointer-events-none absolute inset-0" style={{ background: right ? 'linear-gradient(270deg, hsl(var(--background)/.92) 0%, hsl(var(--background)/.6) 38%, transparent 62%)' : 'linear-gradient(90deg, hsl(var(--background)/.92) 0%, hsl(var(--background)/.6) 38%, transparent 62%)' }} />}
 
       <header className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 py-4 md:px-10">
         <div />
@@ -165,14 +165,17 @@ function App() {
       </header>
 
       <AnimatePresence mode="wait">
-        <motion.section key={ch.id}
+        {ch.id === 'replay' ? <motion.section key="replay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-10" data-testid="section-replay">
+          <h1 className="absolute left-5 top-12 max-w-[85%] font-serif text-2xl font-light leading-tight sm:left-10 sm:top-12 sm:text-3xl">{ch.title}</h1>
+          <div className="pointer-events-auto absolute bottom-24 left-3 right-3 sm:left-10 sm:right-10"><ReplayPanel r={replay} /></div>
+        </motion.section> : <motion.section key={ch.id}
           initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -20, filter: 'blur(6px)' }}
           transition={{ duration: 0.8, ease: [0.2, 0.7, 0.1, 1] }}
           className={`absolute top-16 bottom-24 z-10 flex flex-col justify-center overflow-y-auto px-5 md:px-12 ${ch.id === 'replay' ? 'md:w-[620px] justify-start' : wide ? 'md:w-[540px]' : 'md:w-[500px]'} w-full ${right ? 'md:right-0' : 'md:left-0'}`}
           data-testid={`section-${ch.id}`}>
           <h1 className={`font-serif font-light leading-[0.95] tracking-tight ${index === 0 ? 'text-5xl md:text-7xl' : 'text-3xl md:text-[2.6rem]'}`}>{ch.title}</h1>
           <Body id={ch.id} replay={replay} />
-        </motion.section>
+        </motion.section>}
       </AnimatePresence>
 
       <footer className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-4 md:px-10">
