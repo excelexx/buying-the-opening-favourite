@@ -1,0 +1,1 @@
+- [Presentation integrity](presentation-integrity.md) — distinguish saved strategy results from the fictional, date-compressed teaching replay.

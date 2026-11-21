@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Opening Favourite"
+description = "An immersive animated strategy presentation with a playable 3D timeline illustrating order submission, partial fills, expiry, and settlement."
+version = "1.0.0"
+id = "artifacts/opening-favourite"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25292
+
+[services.development]
+run = "pnpm --filter @workspace/opening-favourite run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/opening-favourite", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/opening-favourite/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25292"
+BASE_PATH = "/"
