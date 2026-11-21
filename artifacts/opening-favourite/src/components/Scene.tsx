@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { chapters, startChart, SPACING } from '@/deck';
-import { marketWindows, timelineMilestones, storyDate, type SimulationEvent, type SimulationSnapshot } from '@/lib/simulation';
+import { marketWindows, timelineMilestones, type SimulationEvent, type SimulationSnapshot } from '@/lib/simulation';
 import { Html, OrthographicCamera } from '@react-three/drei';
 import { marketAction } from '@/lib/timeline-actions';
 import { OrderPopup } from './OrderPopup';
@@ -14,14 +14,21 @@ const C = {
 export const stationX = (i: number) => i * SPACING;
 const INITIAL_CAMERA = { position: [-4, 3, 11] as [number, number, number], fov: 42 };
 
-function PortraitCamera({ enabled }: { enabled: boolean }) {
-  const width = useThree(s => s.size.width);
-  return enabled && width < 640
-    ? <OrthographicCamera makeDefault position={[0, 30, 50]} zoom={Math.max(6, (width - 170) / 20)} near={0.1} far={250} />
+function timelineZoom(width: number, height: number) {
+  return width < 640
+    ? Math.max(6, (width - 140) / 16)
+    : Math.max(8, Math.min((width - 210) / 16, (height - 180) / 8.5));
+}
+
+function ReplayCamera({ enabled }: { enabled: boolean }) {
+  const { width, height } = useThree(s => s.size);
+  return enabled
+    ? <OrthographicCamera makeDefault position={[0, 30, 50]} zoom={timelineZoom(width, height)} near={0.1} far={250} />
     : null;
 }
 
 function Rig({ index, replay }: { index: number; replay: boolean }) {
+  const activeCamera = useRef<THREE.Camera | null>(null);
   const target = useRef(new THREE.Vector3());
   const look = useRef(new THREE.Vector3());
   useFrame(({ camera, pointer, clock, size }, dt) => {
@@ -30,16 +37,23 @@ function Rig({ index, replay }: { index: number; replay: boolean }) {
     const compact = size.width < 640;
     if (replay) {
       const distance = Math.max(13, (compact ? 24 : 18) / Math.max(0.35, size.width / size.height));
-      target.current.set(x + (compact ? -3 : 0) + pointer.x * 0.08, distance * 0.82, distance);
+      target.current.set(x + (compact ? -4 : 0) + pointer.x * 0.08, distance * 1.35, distance);
     }
     else target.current.set(x + 1.5 + pointer.x * 0.3 + sway * 0.2, 5 + pointer.y * 0.3, 16);
     const k = 1 - Math.pow(0.04, dt);
-    camera.position.lerp(target.current, k);
-    look.current.lerp(new THREE.Vector3(x + (replay ? compact ? -3 : 0 : 1.5), replay ? 0 : 1.6, 0), k);
+    const lookTarget = new THREE.Vector3(x + (replay ? compact ? -4 : 0 : 1.5), replay ? 0 : 1.6, 0);
+    if (activeCamera.current !== camera) {
+      camera.position.copy(target.current);
+      look.current.copy(lookTarget);
+      activeCamera.current = camera;
+    } else {
+      camera.position.lerp(target.current, k);
+      look.current.lerp(lookTarget, k);
+    }
     camera.lookAt(look.current);
     if ('isOrthographicCamera' in camera && camera.isOrthographicCamera) {
       const ortho = camera as THREE.OrthographicCamera;
-      ortho.zoom = Math.max(6, (size.width - 170) / 20);
+      ortho.zoom = timelineZoom(size.width, size.height);
       ortho.updateProjectionMatrix();
     }
   });
@@ -188,7 +202,7 @@ function Exhibit({ id }: { id: string }) {
 const TX = (t: number, d: number) => -8 + (t / d) * 16;
 function Replay({ snap, selected, time, events, duration }: { snap: SimulationSnapshot | null; selected: string; time: number; events: SimulationEvent[]; duration: number }) {
   const compact = useThree(s => s.size.width < 640);
-  const laneGap = compact ? 7 : 3.4;
+  const laneGap = compact ? 14 : 3.4;
   const depth = laneGap * 2 + 2.2;
   const X = (t: number) => TX(t, duration);
   const fills = events.filter((e) => e.type === 'fill' && e.time <= time);
@@ -212,20 +226,20 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
         let cum = 0;
         return (
           <group key={w.name} position={[0, 0, z]}>
-            <Html position={[Math.max(-6.2, Math.min(compact ? 2 : 6.2, X(Math.min(time, w.settlement)))), 1.8, 0]} center zIndexRange={[12, 11]}>
+            <Html position={[Math.max(-6.2, Math.min(compact ? 1 : 6.2, X(Math.min(time, w.settlement)))), 1.8, 0]} center zIndexRange={[12, 11]}>
               <div role="status" data-testid={`popup-${w.name.split(' ')[0].toLowerCase()}`} style={{ opacity: action ? 1 : 0, transition: 'opacity 180ms', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
                 <OrderPopup action={action} color={col} />
                 <div style={{ width: 1, height: 18, background: `${col}88`, margin: '0 auto' }} />
               </div>
             </Html>
-            <mesh position={[(bx + ex) / 2, 0.04, 0]}><boxGeometry args={[ex - bx, 0.06, sel ? 0.9 : 0.7]} /><meshStandardMaterial color={col} transparent opacity={0.22} /></mesh>
-            {doneB > 0 && <mesh position={[bx + X(doneB) / 2 + 4, 0.08, 0]}><boxGeometry args={[X(doneB) + 8, 0.07, 0.72]} /><meshStandardMaterial color={col} transparent opacity={0.55} /></mesh>}
-            <mesh position={[(ex + sx) / 2, 0.03, 0]}><boxGeometry args={[sx - ex, 0.03, 0.18]} /><meshStandardMaterial color={C.ink} transparent opacity={0.25} /></mesh>
-            {doneH > 0 && <mesh position={[ex + (X(doneH) + 8) / 2, 0.05, 0]}><boxGeometry args={[X(doneH) + 8, 0.05, 0.2]} /><meshStandardMaterial color={C.ink} /></mesh>}
-            <mesh position={[ex, 0.6, 0]}><boxGeometry args={[0.05, 1.2, 0.9]} /><meshStandardMaterial color={C.ink} /></mesh>
+            <mesh position={[(bx + ex) / 2, 0.07, 0]}><boxGeometry args={[ex - bx, 0.13, sel ? 1.2 : 1.05]} /><meshStandardMaterial color={col} transparent opacity={0.22} /></mesh>
+            {doneB > 0 && <mesh position={[bx + X(doneB) / 2 + 4, 0.14, 0]}><boxGeometry args={[X(doneB) + 8, 0.16, 1.05]} /><meshStandardMaterial color={col} transparent opacity={0.55} /></mesh>}
+            <mesh position={[(ex + sx) / 2, 0.04, 0]}><boxGeometry args={[sx - ex, 0.06, 0.28]} /><meshStandardMaterial color={C.ink} transparent opacity={0.25} /></mesh>
+            {doneH > 0 && <mesh position={[ex + (X(doneH) + 8) / 2, 0.08, 0]}><boxGeometry args={[X(doneH) + 8, 0.09, 0.3]} /><meshStandardMaterial color={C.ink} /></mesh>}
+            <mesh position={[ex, 0.8, 0]}><boxGeometry args={[0.1, 1.6, 1.15]} /><meshStandardMaterial color={C.ink} /></mesh>
             <Html position={[ex, 0, compact ? 0.4 : 0.8]} center>{label(compact ? 'CLOSE' : 'VOTE / CLOSE', C.ink, 600, compact ? 7 : 8)}</Html>
             <group position={[sx, 0, 0]}>
-              <mesh position={[0, settled ? 0.35 : 0.06, 0]} rotation={[0, 0, 0]}><cylinderGeometry args={[0.32, 0.32, settled ? 0.1 : 0.04, 32]} /><meshStandardMaterial color={C.brass} metalness={settled ? 0.7 : 0} roughness={0.3} transparent opacity={settled ? 1 : 0.4} /></mesh>
+              <mesh position={[0, settled ? 0.4 : 0.08, 0]} rotation={[0, 0, 0]}><cylinderGeometry args={[0.4, 0.4, settled ? 0.14 : 0.06, 32]} /><meshStandardMaterial color={C.brass} metalness={settled ? 0.7 : 0} roughness={0.3} transparent opacity={settled ? 1 : 0.4} /></mesh>
               <Html position={[0, 0, compact ? 2 : 0.8]} center>{label(settled ? `SETTLED $${w.wins ? (h?.shares ?? 0) : 0}` : 'SETTLES', settled ? C.brass : C.ink, 700, compact ? 7 : 8)}</Html>
             </group>
             <Html position={[-8.1, 0.15, 0]} center><div style={{ transform: 'translateX(-55%)', font: `${sel ? 700 : 600} 12px Bricolage Grotesque, sans-serif`, color: col, whiteSpace: 'nowrap', textAlign: 'right', padding: '5px 8px', background: '#efe6d6ed', borderRadius: 3 }}>
@@ -233,11 +247,11 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
               <div style={{ font: '400 10px JetBrains Mono, monospace', marginTop: 4, color: C.ink }} data-testid={`opening-bid-${w.name.split(' ')[0].toLowerCase()}`}>Opening bid ${w.bid.toFixed(2)}</div>
             </div></Html>
             {fills.filter((e) => e.market === w.name).map((e, k) => {
-              cum += e.quantity; const ht = Math.max(0.04, (cum / 100) * 2.4);
-              return <mesh key={k} position={[X(e.time), ht / 2 + 0.1, 0]}><boxGeometry args={[0.09, ht, 0.4]} /><meshStandardMaterial color={col} /></mesh>;
+              cum += e.quantity; const ht = Math.max(0.12, (cum / 100) * 3.2);
+              return <mesh key={k} position={[X(e.time), ht / 2 + 0.22, 0]}><boxGeometry args={[0.23, ht, 0.78]} /><meshStandardMaterial color={col} /></mesh>;
             })}
             {(snap?.orders ?? []).filter((o) => o.market === w.name && o.status === 'expired' && o.quantity === o.remaining).map((o) => (
-              <mesh key={o.id} position={[X(o.endedAt ?? o.submittedAt + 30), 0.2, 0]}><boxGeometry args={[0.18, 0.18, 0.18]} /><meshStandardMaterial color={C.ink} wireframe transparent opacity={0.4} /></mesh>
+              <mesh key={o.id} position={[X(o.endedAt ?? o.submittedAt + 30), 0.38, 0]}><boxGeometry args={[0.32, 0.32, 0.32]} /><meshStandardMaterial color={C.ink} wireframe transparent opacity={0.4} /></mesh>
             ))}
           </group>
         );
@@ -245,7 +259,6 @@ function Replay({ snap, selected, time, events, duration }: { snap: SimulationSn
       <group position={[X(time), 0, 0]}>
         <mesh position={[0, 1.2, 0]}><boxGeometry args={[0.04, 2.4, depth]} /><meshBasicMaterial color={C.yes} transparent opacity={0.12} /></mesh>
         <mesh position={[0, 1.2, depth / 2]}><boxGeometry args={[0.05, 2.4, 0.05]} /><meshBasicMaterial color={C.yes} /></mesh>
-        <Html position={[0, 2.7, depth / 2]} center>{label(storyDate(time).toUpperCase(), C.yes, 700, 11)}</Html>
       </group>
     </group>
   );
@@ -262,7 +275,7 @@ export default function Scene({ index, snap, selected, time, events, duration }:
       <ambientLight intensity={0.7} />
       <directionalLight position={[6, 10, 6]} intensity={1.4} color="#fff3df" />
       <directionalLight position={[-8, 4, -4]} intensity={0.4} color="#9fc7cc" />
-      <PortraitCamera enabled={replay} />
+      <ReplayCamera enabled={replay} />
       <Rig index={index} replay={replay} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[chapters.length * SPACING / 2, -0.05, 0]}>
         <planeGeometry args={[chapters.length * SPACING + 60, 60]} />

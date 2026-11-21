@@ -166,7 +166,6 @@ function App() {
 
       <AnimatePresence mode="wait">
         {ch.id === 'replay' ? <motion.section key="replay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-10" data-testid="section-replay">
-          <h1 className="absolute left-5 top-12 max-w-[85%] font-serif text-2xl font-light leading-tight sm:left-10 sm:top-12 sm:text-3xl">{ch.title}</h1>
           <div className="pointer-events-auto absolute bottom-24 left-[15%] right-[15%]"><ReplayPanel r={replay} /></div>
         </motion.section> : <motion.section key={ch.id}
           initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -20, filter: 'blur(6px)' }}
