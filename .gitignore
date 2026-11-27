@@ -53,3 +53,13 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Strategy research and local inputs
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+local-data/
+replay-output/
+*.zip

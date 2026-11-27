@@ -1,0 +1,21 @@
+{
+  "strategy": "immediate-favourite, hold to settlement",
+  "engine_source_commit": "daf77d8f4200ca9be2231454e941e0332127e44f",
+  "research_reference_commit": "933d2263f8fa01cacb88d6edc042ca7610b40332",
+  "cutoff_utc": "2026-11-20T00:00:00Z",
+  "source_tables": [
+    "national_accounts.csv",
+    "cold_2024_accounts.csv",
+    "omit_2024_annual.csv",
+    "cold_2026_accounts.csv",
+    "national_dates.csv"
+  ],
+  "source_policy": "favorite",
+  "validation": "All 14 account/start-day replays matched prior figures; all 104 full-period scenario/date profits matched the independent frozen reference. Archived event bytes checked against every roster digest.",
+  "result_sha256": {
+    "accounts.csv": "b107f9b142b7d985a3ef06bbe2f097f2efc673713be3a96ae3f1104f016f87d5",
+    "positions.csv": "6b51f0ec292d5c64e4d368c456362718f24dd5fe7a95b560a7da07f8293dbd2b",
+    "start_days.csv": "f8c87bbe8bda7f3205be20122c22eca4398119c9149bfbf004a274e0c9fd52bf",
+    "voting_dates.csv": "8a94fa40bdbcf25d403191e17a48ab56a9bf8a3623da19789cd5db6aeda2bb2d"
+  }
+}
