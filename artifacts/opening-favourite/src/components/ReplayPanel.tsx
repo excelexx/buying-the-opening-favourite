@@ -16,7 +16,7 @@ export function ReplayPanel({ r }: { r: Replay }) {
       aria-valuetext={storyDate(r.time)} type="range" min={0} max={r.run.duration}
       step={0.1} value={r.time} data-testid="input-scrub"
       onPointerDown={() => { resume.current = r.playing || r.time >= r.run.duration; r.setPlaying(false); }}
-      onPointerUp={() => r.setPlaying(resume.current)}
+      onPointerUp={(e) => { r.setPlaying(resume.current); e.currentTarget.blur(); }}
       onPointerCancel={() => r.setPlaying(resume.current)}
       onChange={e => r.setTime(Number(e.target.value))} />
   );

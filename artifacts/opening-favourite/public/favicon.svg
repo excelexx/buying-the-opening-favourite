@@ -1,3 +1,6 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="13" fill="#efe6d6"/>
+  <rect x="24" y="8" width="19" height="24" rx="1.5" fill="#d8402a" transform="rotate(8 33 20)"/>
+  <rect x="11" y="29" width="42" height="26" rx="2.5" fill="#f5eedf" stroke="#1c2438" stroke-width="3.2"/>
+  <rect x="20" y="27.4" width="24" height="3.6" rx="1.8" fill="#1c2438"/>
 </svg>

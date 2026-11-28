@@ -17,5 +17,14 @@
     "positions.csv": "6b51f0ec292d5c64e4d368c456362718f24dd5fe7a95b560a7da07f8293dbd2b",
     "start_days.csv": "f8c87bbe8bda7f3205be20122c22eca4398119c9149bfbf004a274e0c9fd52bf",
     "voting_dates.csv": "8a94fa40bdbcf25d403191e17a48ab56a9bf8a3623da19789cd5db6aeda2bb2d"
+  },
+  "exhibits_source": "electionlab/exhibits.py",
+  "exhibits_sha256": "f8fc45d2306bc91b3469e1a9146b90367b023b2883d83380cbbdbd36b421dd33",
+  "public_record_check": {
+    "date_utc": "2026-11-27",
+    "tapes_listed": 530,
+    "tapes_matching_digest": 530,
+    "runs_matching_frozen_tables": 14,
+    "method": "Tapes rebuilt with electionlab.kalshi from Kalshi's public endpoints, then electionlab.replay.run and verify."
   }
 }

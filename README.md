@@ -26,7 +26,41 @@ python -m electionlab.report
 python -m unittest discover -s tests -v
 ```
 
-The report reconciles cash, acquisition costs and redemptions, checks every full-period position against its voting-date total, and prints the annual and start-day results. It reads the committed CSVs and does not rerun market events. The tests cover partial fills, order expiry, simultaneous cash allocation, the 100-share cap, fixed side selection, and the absence of a discount condition.
+The report reconciles cash, acquisition costs and redemptions, checks every full-period position against its voting-date total, and prints the annual and start-day results. It reads the committed CSVs and does not rerun market events. The tests cover partial fills, order expiry, simultaneous cash allocation, the 100-share cap, fixed side selection, and the absence of a discount condition. They also check that the presentation's numbers agree with the frozen tables.
+
+## The presentation
+
+The web presentation lives in [artifacts/opening-favourite](artifacts/opening-favourite). It keeps the nine chapters of the slide deck with their wording unchanged, and adds eight chapters that set out the math: why the favourite, the value of one share, the account identity, how one account is shared between markets, where the profit came from, what correlation does to the evidence, how sure we can be, and the limits.
+
+```sh
+pnpm install
+PORT=5173 BASE_PATH=/ pnpm --filter @workspace/opening-favourite run dev
+```
+
+Arrows or Space move between chapters. `G` lists all chapters, `N` shows presenter notes, `M` switches between the full deck and the original nine chapters, `P` presents on a timer, `F` is full screen and `?` lists the keys. Every chapter has its own address, for example `#correlation`.
+
+## The numbers behind the math chapters
+
+The results in the added chapters are generated, not typed in. [electionlab/exhibits.py](electionlab/exhibits.py) rebuilds them from the same verified tapes and the same simulator as the replay, and writes [exhibits.json](artifacts/opening-favourite/src/data/exhibits.json), which the presentation imports. Where a chapter states a finding in words, a test holds the data to it.
+
+```sh
+python -m electionlab.exhibits --kalshi --save-tapes local-data/tapes
+python -m electionlab.exhibits --tapes local-data/tapes --check
+```
+
+The first command requests the records, checks every digest and keeps the verified tapes so later runs need no network. The second confirms the committed file. `--archives` works as it does for the replay. The output is deterministic because resampling uses a fixed seed.
+
+| Exhibit | What is computed |
+| --- | --- |
+| Opening calibration | For each listed contract, the chosen side's midpoint at its first usable quote, against whether that side won. Grouped by price, with 95% Wilson intervals. |
+| Per-share hurdle | The break-even win rate `p + 0.07·p·(1−p) + c`, where `c` is the scenario's extra cost per share. |
+| Account identity | `net = shares × (share-weighted win rate − average all-in cost)` and `return = (net ÷ cost) × (cost ÷ 1,000)`. |
+| Profit split | Every simulated fill, grouped by UTC day relative to its voting date, by price, and by whether its price was below the chosen side's opening midpoint. Each split sums to the account's net profit. |
+| Same-night correlation | The intraclass correlation of standardized surprises `(W − p) ÷ √(p(1−p))` within a voting date, from a one-way analysis of variance for groups of unequal size, compared with 4,000 shuffles of the dates. |
+| Risk model | Each position is one bet of `h` shares at average price `p`. `Var = Σ σᵢ² + ρ · Σ over nights Σ over pairs σᵢσⱼ`, with `σᵢ = hᵢ·√(pᵢ(1−pᵢ))`. A fair market expects a loss equal to fees and extra costs. |
+| Resampled dates | 20,000 bootstrap accounts that draw the 52 voting dates whole, with replacement. |
+
+Under normal execution, opening favourites were priced at 85.8% on average and won 89.5% of the time across 514 settled contracts. The account kept 3.43¢ on an average share costing 77.98¢, and spent its $1,000 6.86 times over. Shares bought below the opening midpoint made $413.80 and shares bought at or above it lost $112.25. The estimated same-night correlation of surprises is 0.02, while shuffled dates give estimates from −0.06 to 0.10, so it cannot be told apart from zero. The profit sits 1.18 standard deviations above a fair market at zero correlation and 1.01 at the estimate, and 86% of resampled accounts end above zero. This is evidence of an edge, not proof of one.
 
 ## Rerun the strategy from market events
 
@@ -46,7 +80,7 @@ Alternatively, request the historical records from Kalshi’s public endpoints:
 python -m electionlab.replay --kalshi --verify
 ```
 
-This uses no API key. It can make many requests. Exact reproduction depends on Kalshi continuing to serve the same historical records. A missing record, API error or tape-hash mismatch stops the replay instead of silently changing its inputs. The full archived-data replay was verified for this release; the live API retrieval path was not rerun for this release.
+This uses no API key. It can make many requests. Exact reproduction depends on Kalshi continuing to serve the same historical records. A missing record, API error or tape-hash mismatch stops the replay instead of silently changing its inputs. The full archived-data replay was verified for this release. The public-record path was checked on 27 November 2026: all 530 tapes rebuilt from Kalshi's public endpoints matched their digests, and all 14 runs replayed from those tapes matched the frozen tables.
 
 Both commands generate `replay-output/` and compare it with the committed results. The default suite runs the continuous account, each year independently, and each start from three days before voting through voting day, under both execution settings. These are 14 distinct runs; the full-period D−3 run also supplies the D−3 sensitivity point.
 
@@ -86,6 +120,8 @@ Historical exchange fees apply in addition to these extra costs. A fill in this 
 - [electionlab/demand_funding.py](electionlab/demand_funding.py): shared cash, order submission, partial fills, expiry and settlement.
 - [electionlab/replay.py](electionlab/replay.py): annual filtering, start-day changes and comparison to frozen output.
 - [electionlab/inputs.py](electionlab/inputs.py) and [electionlab/kalshi.py](electionlab/kalshi.py): pinned archive loading and public-record normalization.
+- [electionlab/exhibits.py](electionlab/exhibits.py): calibration, profit splits, correlation and resampling behind the presentation's math chapters.
+- [artifacts/opening-favourite](artifacts/opening-favourite): the web presentation. Its order replay in `src/lib/simulation.ts` is a fictional teaching example and is never used for a result.
 - [data/provenance.json](data/provenance.json): input-code provenance, result hashes and verification scope.
 
 The Alice/Bob dates and the second-by-second fill example in the slides are illustrative, not historical positions. The numerical account and start-day results come from the replay.

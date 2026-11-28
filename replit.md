@@ -24,6 +24,9 @@ An animated, presenter-controlled explanation of the opening-favourite election-
 ## Where things live
 
 - `artifacts/opening-favourite/src/deck.ts` — presentation narrative and saved reported figures.
+- `artifacts/opening-favourite/src/chapters/` — the original chapters and eight additional math chapters.
+- `artifacts/opening-favourite/src/data/exhibits.json` — generated math figures; regenerate with `electionlab.exhibits`, not hand edits.
+- `artifacts/opening-favourite/src/notes.ts` — presenter notes for each chapter.
 - `artifacts/opening-favourite/src/lib/simulation.ts` — deterministic synthetic replay and compressed date milestones.
 - `artifacts/opening-favourite/src/components/Scene.tsx` — continuous 3D exhibition.
 - `artifacts/opening-favourite/public/source/strategy.pdf` — original source deck.
@@ -38,12 +41,14 @@ An animated, presenter-controlled explanation of the opening-favourite election-
 
 - Navigate chapters with arrows or Space, autoplay the presentation, enter fullscreen, and inspect source materials.
 - Compare normal and stressed execution, replay order attempts and settlements, and scrub through dated events.
+- The full deck has 17 chapters; Short mode retains the original nine. `G` opens chapters, `N` toggles notes, `M` changes deck mode, and `?` shows shortcuts.
 
 ## User preferences
 
 - Use the uploaded 3D presentation as a visual reference.
 - Make the timeline more complex, with more dates and explicit explanations of attempts, fills and unfilled orders, including a “trying” animation.
 - Keep the original presentation's slides, order and text unchanged. Add explanations only in the timeline.
+- Approved expansion: integrate the friend's eight math chapters while preserving the original nine and the latest timeline edits.
 - Show exactly three timeline markets with different starts and endings, and play from the initial state through every final settlement.
 - Keep slide text separate from the 3D graphics so they never overlap. Keep the timeline large, with opening bids, animated order attempts, short popups and just one small slider.
 - Animate the popup text box itself with a quick standard rejection “bzzzt”: a sharp side-to-side shake and red flash/outline, not an expanding bulge. Do not use a sphere or a separate 3D attempt effect.
@@ -54,6 +59,7 @@ An animated, presenter-controlled explanation of the opening-favourite election-
 
 - The source GitHub repository may require access; do not call it publicly available.
 - Synthetic demonstration fees use an illustrative rounded taker curve, not the source replay's dated historical schedule.
+- Preserve the shared overlay portal for 3D labels and the separate text/figure regions; do not place presentation copy over the meshes.
 
 ## Pointers
 

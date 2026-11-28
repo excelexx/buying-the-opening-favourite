@@ -10,6 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",
@@ -59,6 +62,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "catalog:",
     "input-otp": "^1.4.2",
+    "katex": "^0.19.1",
     "lucide-react": "catalog:",
     "next-themes": "^0.4.6",
     "react": "catalog:",

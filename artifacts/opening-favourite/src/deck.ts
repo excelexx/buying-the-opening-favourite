@@ -1,18 +1,79 @@
-export type Slide = { id: string; title: string; align?: 'left' | 'right'; dwell: number };
+export type SectionId = 'idea' | 'rule' | 'results' | 'math' | 'risk' | 'appendix';
+
+export type Slide = {
+  id: string;
+  title: string;
+  section: SectionId;
+  /** What the exhibit is: a 3D station, the full-bleed order replay, or a figure plate. */
+  kind: 'scene' | 'replay' | 'figure';
+  align?: 'left' | 'right';
+  dwell: number;
+  /** One of the nine chapters of the original deck. Their titles, order and text are unchanged. */
+  core?: boolean;
+  wide?: boolean;
+  /** One line for the chapter overview. */
+  summary: string;
+};
 
 export const SPACING = 16;
 
-export const chapters: Slide[] = [
-  { id: 'open', title: 'buying the opening favourite', dwell: 9 },
-  { id: 'types', title: 'Election types in the strategy', dwell: 9, align: 'right' },
-  { id: 'buying', title: 'How buying works', dwell: 16 },
-  { id: 'replay', title: 'Buying windows, voting and settlement', dwell: 0 },
-  { id: 'trigger', title: 'What triggers another purchase?', dwell: 13, align: 'right' },
-  { id: 'results', title: 'Profit by year and across the full period', dwell: 13, align: 'right' },
-  { id: 'start', title: 'Profit at four buying start dates', dwell: 11 },
-  { id: 'stressed', title: 'Appendix: stressed profits', dwell: 13, align: 'right' },
-  { id: 'appendix', title: 'Appendix: two ways to wait for a discount', dwell: 13, align: 'right' },
+export const sections: { id: SectionId; label: string }[] = [
+  { id: 'idea', label: 'The idea' },
+  { id: 'rule', label: 'The rule' },
+  { id: 'results', label: 'Results' },
+  { id: 'math', label: 'The math' },
+  { id: 'risk', label: 'How sure' },
+  { id: 'appendix', label: 'Appendix' },
 ];
+
+export const allChapters: Slide[] = [
+  { id: 'open', title: 'buying the opening favourite', section: 'idea', kind: 'scene', dwell: 9, core: true,
+    summary: 'One rule, one $1,000 account, 52 voting dates.' },
+  { id: 'types', title: 'Election types in the strategy', section: 'idea', kind: 'scene', dwell: 9, align: 'right', core: true,
+    summary: 'Which contests are in the fixed roster.' },
+  { id: 'thesis', title: 'Why buy the favourite?', section: 'idea', kind: 'figure', dwell: 16,
+    summary: 'Favourites won more often than their opening price said.' },
+
+  { id: 'buying', title: 'How buying works', section: 'rule', kind: 'scene', dwell: 16, core: true,
+    summary: 'Clips of 10 shares, a cap of 100, hold to settlement.' },
+  { id: 'replay', title: 'Buying windows, voting and settlement', section: 'rule', kind: 'replay', dwell: 0, core: true,
+    summary: 'A playable, fictional three-market order replay.' },
+  { id: 'trigger', title: 'What triggers another purchase?', section: 'rule', kind: 'scene', dwell: 13, align: 'right', core: true, wide: true,
+    summary: 'Quotes place orders. Trades decide what fills.' },
+
+  { id: 'results', title: 'Profit by year and across the full period', section: 'results', kind: 'scene', dwell: 13, align: 'right', core: true, wide: true,
+    summary: 'Positive in each year and across 2024 to 2026.' },
+  { id: 'start', title: 'Profit at four buying start dates', section: 'results', kind: 'scene', dwell: 11, core: true,
+    summary: 'The same replay started three, two, one and zero days before voting.' },
+
+  { id: 'share', title: 'One share is one weighted coin', section: 'math', kind: 'figure', dwell: 18,
+    summary: 'Expected value, the fee curve and the break-even win rate.' },
+  { id: 'identity', title: 'The whole account in one line', section: 'math', kind: 'figure', dwell: 16,
+    summary: 'Profit is shares times the gap between win rate and cost.' },
+  { id: 'capital', title: 'One account, many markets', section: 'math', kind: 'figure', dwell: 16,
+    summary: 'Reserving cash, sharing it pro rata, and recycling it.' },
+  { id: 'sources', title: 'Where the profit came from', section: 'math', kind: 'figure', dwell: 18,
+    summary: 'Split by discount to the opening price, by day and by price paid.' },
+
+  { id: 'correlation', title: 'Is one election night one bet?', section: 'risk', kind: 'figure', dwell: 18,
+    summary: 'What correlation between contracts does to the evidence.' },
+  { id: 'confidence', title: 'How sure are we?', section: 'risk', kind: 'figure', dwell: 16,
+    summary: 'Profit by voting date, and what resampling the dates says.' },
+  { id: 'limits', title: 'What could break it', section: 'risk', kind: 'figure', dwell: 16,
+    summary: 'Limits of the test and what we would check next.' },
+
+  { id: 'stressed', title: 'Appendix: stressed profits', section: 'appendix', kind: 'scene', dwell: 13, align: 'right', core: true, wide: true,
+    summary: 'Slower, smaller, costlier fills.' },
+  { id: 'appendix', title: 'Appendix: two ways to wait for a discount', section: 'appendix', kind: 'scene', dwell: 13, align: 'right', core: true, wide: true,
+    summary: 'Two entry rules that ask for a lower price first.' },
+];
+
+/** The nine chapters of the original deck, in their original order. */
+export const coreChapters = allChapters.filter((c) => c.core);
+/** Chapters that own a station on the 3D rail, in travel order. */
+export const stations = allChapters.filter((c) => c.kind !== 'figure');
+/** Kept for modules that only need the full list. */
+export const chapters = allChapters;
 
 export const types = [
   'Presidential elections by state',
@@ -59,6 +120,7 @@ export const fillExample = [
   { t: '10:00:12', what: 'Eligible 400-share trade: 10 shares fill', held: 20 },
 ];
 
+/** The two waiting variants come from the source deck. Their code is outside this repository. */
 export const discount = [
   { label: 'Buy immediately', normal: '$301.55', stressed: '$229.94' },
   { label: 'Always wait for a discount', normal: '$411.55', stressed: '$265.86' },
